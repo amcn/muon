@@ -66,3 +66,16 @@ option(
         'vc++latest',
     ],
 )
+
+option(
+    'rust_std',
+    yield: true,
+    type: 'combo',
+    value: 'none',
+    choices: [
+        'none',
+        '2015',
+        '2018',
+        '2021'
+    ],
+)
