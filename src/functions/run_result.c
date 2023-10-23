@@ -11,18 +11,21 @@
 #include "lang/typecheck.h"
 #include "log.h"
 
-static bool
+static void
 ensure_valid_run_result(struct workspace *wk, uint32_t node, obj rcvr)
 {
 	struct obj_run_result *rr = get_obj_run_result(wk, rcvr);
 
 	if ((rr->flags & run_result_flag_from_compile)
 	    && !(rr->flags & run_result_flag_compile_ok)) {
-		interp_error(wk, node, "this run_result was not run because its source could not be compiled");
-		return false;
+		// The Meson documentation states that these values should be
+		// undefined if compilation failed. The values below are what
+		// Meson itself uses in this case.
+		interp_warning(wk, node, "this run_result's values are undefined because its source could not be compiled");
+		rr->status = 999;
+		rr->out = make_str(wk, "UNDEFINED");
+		rr->err = make_str(wk, "UNDEFINED");
 	}
-
-	return true;
 }
 
 static bool
@@ -32,9 +35,7 @@ func_run_result_returncode(struct workspace *wk, obj rcvr, uint32_t args_node, o
 		return false;
 	}
 
-	if (!ensure_valid_run_result(wk, args_node, rcvr)) {
-		return false;
-	}
+	ensure_valid_run_result(wk, args_node, rcvr);
 
 	make_obj(wk, res, obj_number);
 	set_obj_number(wk, *res, get_obj_run_result(wk, rcvr)->status);
@@ -48,9 +49,7 @@ func_run_result_stdout(struct workspace *wk, obj rcvr, uint32_t args_node, obj *
 		return false;
 	}
 
-	if (!ensure_valid_run_result(wk, args_node, rcvr)) {
-		return false;
-	}
+	ensure_valid_run_result(wk, args_node, rcvr);
 
 	*res = get_obj_run_result(wk, rcvr)->out;
 	return true;
@@ -63,9 +62,7 @@ func_run_result_stderr(struct workspace *wk, obj rcvr, uint32_t args_node, obj *
 		return false;
 	}
 
-	if (!ensure_valid_run_result(wk, args_node, rcvr)) {
-		return false;
-	}
+	ensure_valid_run_result(wk, args_node, rcvr);
 
 	*res = get_obj_run_result(wk, rcvr)->err;
 	return true;
