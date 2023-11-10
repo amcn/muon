@@ -390,6 +390,15 @@ handle_special_dependency(struct workspace *wk, struct dep_lookup_ctx *ctx, bool
 			return false;
 		}
 		make_obj(wk, ctx->res, obj_dependency);
+	} else if (strcmp(get_cstr(wk, ctx->name), "intl") == 0) {
+		*handled = true;
+
+		make_obj(wk, ctx->res, obj_dependency);
+		struct obj_dependency *dep = get_obj_dependency(wk, *ctx->res);
+		dep->name = make_str(wk, "intl");
+		dep->flags |= dep_flag_found;
+		dep->type = dependency_type_external_library;
+
 	} else {
 		*handled = false;
 	}

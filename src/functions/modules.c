@@ -10,6 +10,7 @@
 #include "functions/common.h"
 #include "functions/modules.h"
 #include "functions/modules/fs.h"
+#include "functions/modules/i18n.h"
 #include "functions/modules/keyval.h"
 #include "functions/modules/sourceset.h"
 #include "functions/modules/pkgconfig.h"
@@ -18,6 +19,7 @@
 
 const char *module_names[module_count] = {
 	[module_fs] = "fs",
+	[module_i18n] = "i18n",
 	[module_keyval] = "keyval",
 	[module_pkgconfig] = "pkgconfig",
 	[module_python3] = "python3",
@@ -29,7 +31,6 @@ const char *module_names[module_count] = {
 	[module_dlang] = "dlang",
 	[module_gnome] = "gnome",
 	[module_hotdoc] = "hotdoc",
-	[module_i18n] = "i18n",
 	[module_java] = "java",
 	[module_modtest] = "modtest",
 	[module_qt] = "qt",
@@ -74,6 +75,7 @@ func_module_found(struct workspace *wk, obj rcvr, uint32_t args_node, obj *res)
 
 const struct func_impl_name *module_func_tbl[module_count][language_mode_count] = {
 	[module_fs] = { impl_tbl_module_fs, impl_tbl_module_fs_internal },
+	[module_i18n] = { impl_tbl_module_i18n },
 	[module_keyval] = { impl_tbl_module_keyval },
 	[module_pkgconfig] = { impl_tbl_module_pkgconfig },
 	[module_python3] = { impl_tbl_module_python3 },

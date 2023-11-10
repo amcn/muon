@@ -156,6 +156,7 @@ enum feature_opt_state {
 
 enum module {
 	module_fs,
+	module_i18n,
 	module_keyval,
 	module_pkgconfig,
 	module_python,
@@ -168,7 +169,6 @@ enum module {
 	module_dlang,
 	module_gnome,
 	module_hotdoc,
-	module_i18n,
 	module_java,
 	module_modtest,
 	module_qt,
