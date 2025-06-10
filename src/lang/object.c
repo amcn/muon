@@ -2111,6 +2111,12 @@ obj_to_s_opts(struct workspace *wk, obj o, struct tstr *sb, struct obj_to_s_opts
 			obj_to_s_opts(wk, py->sysconfig_vars, sb, opts);
 			tstr_pushs(wk, sb, ", install_paths: ");
 			obj_to_s_opts(wk, py->install_paths, sb, opts);
+			tstr_pushf(wk, sb, ", platform: %s", get_cstr(wk, py->platform));
+			tstr_pushf(wk, sb, ", is_pypy: %s", py->is_pypy ? "true" : "false");
+			tstr_pushf(wk, sb, ", is_venv: %s", py->is_venv ? "true" : "false");
+			tstr_pushf(wk, sb, ", link_libpython: %s", py->link_libpython ? "true" : "false");
+			tstr_pushf(wk, sb, ", suffix: %s", get_cstr(wk, py->suffix));
+			tstr_pushf(wk, sb, ", limited_api_suffix: %s", get_cstr(wk, py->limited_api_suffix));
 		}
 
 		tstr_pushs(wk, sb, ">");

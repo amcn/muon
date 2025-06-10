@@ -59,6 +59,9 @@ introspect_python_interpreter(struct workspace *wk, const char *path, struct obj
 		{ "sysconfig_paths", &python->sysconfig_paths },
 		{ "variables", &python->sysconfig_vars },
 		{ "install_paths", &python->install_paths },
+		{ "platform", &python->platform },
+		{ "suffix", &python->suffix },
+		{ "limited_api_suffix", &python->limited_api_suffix },
 	};
 
 	uint32_t i;
@@ -68,6 +71,10 @@ introspect_python_interpreter(struct workspace *wk, const char *path, struct obj
 			return false;
 		}
 	}
+
+	python->is_pypy = obj_dict_index_as_bool(wk, res_introspect, "is_pypy");
+	python->is_venv = obj_dict_index_as_bool(wk, res_introspect, "is_venv");
+	python->link_libpython = obj_dict_index_as_bool(wk, res_introspect, "links_libpython");
 
 	return true;
 }

@@ -384,6 +384,12 @@ struct obj_python_installation {
 	obj sysconfig_paths;
 	obj sysconfig_vars;
 	obj install_paths;
+	obj platform;
+	bool is_pypy;
+	bool is_venv;
+	bool link_libpython;
+	obj suffix;
+	obj limited_api_suffix;
 };
 
 enum run_result_flags {
