@@ -5,6 +5,7 @@
 
 #include "compat.h"
 
+#include <stdlib.h>
 #include <string.h>
 
 #include "buf_size.h"
@@ -12,6 +13,7 @@
 #include "embedded.h"
 #include "external/tinyjson.h"
 #include "functions/external_program.h"
+#include "functions/kernel/build_target.h"
 #include "functions/modules/python.h"
 #include "install.h"
 #include "lang/object.h"
@@ -567,6 +569,58 @@ func_python_installation_dependency(struct workspace *wk, obj self, obj *res)
 	return false;
 }
 
+struct python_version {
+	uint32_t major;
+	uint32_t minor;
+};
+
+static bool
+parse_limited_api_string(struct workspace *wk,
+	struct args_kw *limited_api_kwarg,
+	struct python_version *requested_version,
+	struct python_version *detected_version)
+{
+	const char *limited_api_str = get_cstr(wk, limited_api_kwarg->val);
+	const char *separator = strchr(limited_api_str, '.');
+
+	if (separator == NULL) {
+		vm_error_at(wk, limited_api_kwarg->node, "Python API version invalid: %s", limited_api_str);
+		return false;
+	}
+
+	requested_version->minor = strtod(separator + 1, NULL);
+	requested_version->major = strtod(limited_api_str, NULL);
+
+	if ((requested_version->major < 3) || (requested_version->minor < 2)) {
+		vm_error_at(wk,
+			limited_api_kwarg->node,
+			"Python Limited API version invalid: %s (must be greater than 3.2)",
+			limited_api_str);
+		return false;
+	}
+
+	if ((detected_version->major < requested_version->major)
+		|| (detected_version->minor < requested_version->minor)) {
+		vm_error_at(wk, limited_api_kwarg->node, "version mismatch... FIXME");
+		return false;
+	}
+
+	return true;
+}
+
+static void
+create_or_append_to_array_kwarg(struct workspace *wk, struct arr *kwargs, const char *arg_name, obj val)
+{
+	struct args_kw *arg = kwargs_arr_get(wk, kwargs, arg_name);
+	if (!arg->set) {
+		arg->val = make_obj(wk, obj_array);
+		arg->set = true;
+	}
+
+	obj_array_push(wk, arg->val, val);
+
+}
+
 static bool
 func_python_installation_extension_module(struct workspace *wk, obj self, obj *res)
 {
@@ -576,6 +630,7 @@ func_python_installation_extension_module(struct workspace *wk, obj self, obj *r
 		ARG_TYPE_NULL,
 	};
 
+	bool retval = false;
 	struct arr kwargs;
 	func_kwargs_lookup(wk, 0, "shared_module", &kwargs);
 	kwargs_arr_del(wk, &kwargs, "name_suffix");
@@ -584,13 +639,46 @@ func_python_installation_extension_module(struct workspace *wk, obj self, obj *r
 	kwargs_arr_push(wk, &kwargs, &(struct args_kw){ "limited_api", obj_string });
 
 	if (!pop_args(wk, an, (struct args_kw *)kwargs.e)) {
-		kwargs_arr_destroy(wk, &kwargs);
-		return false;
+		goto exit;
 	}
-	kwargs_arr_destroy(wk, &kwargs);
 
-	vm_error(wk, "unimplemented");
-	return false;
+	obj suffix;
+	struct obj_python_installation *py_inst = get_obj_python_installation(wk, self);
+
+	struct args_kw *limited_api = kwargs_arr_get(wk, &kwargs, "limited_api");
+	if (limited_api->set) {
+
+		struct python_version user_version = { 0 };
+		struct python_version detected_version = { .major = 3, .minor = 12 }; // TODO: get this from dependency.
+
+		if (!parse_limited_api_string(wk, limited_api, &user_version, &detected_version)) {
+			goto exit;
+		}
+
+		obj def_str = make_strf(wk, "-DPy_LIMITED_API=0x%02x%02x0000", user_version.major, user_version.minor);
+
+		create_or_append_to_array_kwarg(wk, &kwargs, "c_args", def_str);
+		create_or_append_to_array_kwarg(wk, &kwargs, "cpp_args", def_str);
+
+		suffix = py_inst->limited_api_suffix;
+	} else {
+		suffix = py_inst->suffix;
+	}
+
+	struct args_kw kw_suffix = {
+		.key = "name_suffix",
+		.type = obj_string,
+		.val = suffix,
+		.set = true
+	};
+
+	kwargs_arr_push(wk, &kwargs, &kw_suffix);
+
+	retval = func_shared_module(wk, self, res);
+
+exit:
+	kwargs_arr_destroy(wk, &kwargs);
+	return retval;
 }
 
 static obj
